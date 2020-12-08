@@ -8,7 +8,7 @@
 
 .target{
   background: rgb(20,76,132) !important;
-  background: linear-gradient(0deg, rgba(20,76,132,1) 0%, rgba(24,24,24,1) 28%) !important;
+  background: linear-gradient(0deg, rgba(20,76,132,1) 0%, rgba(24,24,24,0.95) 28%) !important;
   border: 1px solid rgba(20,76,132,1) !important;
 }
 
@@ -30,7 +30,7 @@
   width: 320px;
   height: 100px;
   background: rgb(255,18,79);
-  background: linear-gradient(0deg, rgba(116,22,46,1) 0%, rgba(24,24,24,0.8) 28%);
+  background: linear-gradient(0deg, rgba(116,22,46,1) 0%, rgba(24,24,24,0.95) 28%);
 
   border-radius: 4px;
 
@@ -157,7 +157,7 @@
 .action-panel{
   display: flex;
   flex-direction: row;
-  background-color: rgba(24,24,24,1);
+  background-color: rgba(24,24,24,0.95);
   max-width: 100%;
   padding: 7px 4px;
   border: 1px solid rgba(116,22,46,1);
