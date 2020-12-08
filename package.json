@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start:server": "ts-node server/index.ts",
-    "build:client": "webpack && sass ./client/css"
+    "build:client": "webpack && sass ./client/css",
+    "watch:client": "webpack --watch"
   },
   "dependencies": {
     "@types/dotenv": "^8.2.0",
