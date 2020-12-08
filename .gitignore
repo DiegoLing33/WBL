@@ -1,0 +1,12 @@
+# IDE (DEVELOP)
+/.idea
+/node_modules
+/dist
+
+# Client
+/client/**/*.map
+/client/**/*.css
+
+# Trash
+*.log
+*.lock
