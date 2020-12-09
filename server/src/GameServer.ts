@@ -5,6 +5,8 @@ import {createServer, Server as HTTPServer} from "http";
 import {logServer} from "./logger";
 import {getRandomInt} from "../../shared/math/Math";
 import Rect from "../../shared/math/Rect";
+import {RectInterface} from "../../shared/interfaces/RectInterface";
+import vm from "vm";
 
 
 export default class GameServer {
@@ -12,7 +14,7 @@ export default class GameServer {
 	public readonly port: number;
 	public readonly host: string;
 
-	protected readonly players: ServerPlayer[];
+	protected readonly players: Record<number, ServerPlayer>;
 	protected lastPlayerId: number;
 	protected app: Express;
 	protected http: HTTPServer;
@@ -23,7 +25,7 @@ export default class GameServer {
 		this.port = port;
 		this.host = host;
 
-		this.players = [];
+		this.players = {};
 		this.lastPlayerId = 0;
 
 		this.app = express();
@@ -54,35 +56,108 @@ export default class GameServer {
 		const player = new ServerPlayer(playerId, socket,
 			Rect.position(getRandomInt(10, 800), getRandomInt(10, 800)));
 
-		this.players.push(player);
+		this.players[playerId] = player;
 		this.broadcastPlayersList();
+
+		player.getSocket().on("command", (message: string) => {
+			const players = this.players;
+			message = message.replace(/@([0-9]+)/g, "id($1)");
+
+			(function() {
+				let results: string;
+				try {
+					const ctx = {
+						id: (id: number) => {
+							return players[id];
+						},
+						players
+					};
+					vm.createContext(ctx);
+					vm.runInContext(message, ctx);
+					results = String(ctx);
+				} catch (e) {
+					results = String(e);
+				}
+				player.send("consoleMessage", results);
+
+			})();
+		});
 
 		player.onDisconnected = () => () => {
 			this.broadcastPlayersList();
 		};
 
 		player.onCollision = (self, target) => {
-			this.broadcastPlayersList();
+			this.broadcastCollision(self.getId(), target.getId());
+		};
+
+		player.onMove = (self) => {
+			this.broadcastPlayerMove(self.getId(), self.rect, self.collisions);
+		};
+
+		player.onHealth = self => {
+			this.broadcastEntityHealth(self.getId(), self.maxHealth, self.health);
+		};
+
+		player.onName = () => {
+			this.broadcastEntityName(player.getId(), player.name);
+		};
+
+		player.onTarget = targetId => {
+			this.broadcastTarget(player.getId(), targetId);
+			if (player.target && this.hasEntity(player.target)) {
+				this.getEntityById(player.target).setFreeTargetBy(player.getId());
+			}
+		};
+		player.onRotate = angle => {
+			this.broadcastEntityRotation(player.getId(), angle);
+		};
+
+		player.onTargetBy = attackers => {
+			console.log(attackers);
+		};
+
+		player.onClick = rect => {
+			const collisions: number[] = [];
+
+			this.forEachPlayer(withPlayer => {
+				if (Rect.getIntersecting(rect, withPlayer.rect) !== false) {
+					collisions.push(withPlayer.getId());
+				}
+			});
+
+			if (collisions.length > 0) {
+				player.setTarget(collisions[0]);
+			} else {
+				player.setTarget(undefined);
+			}
 		};
 
 		player.onCollisionRequest = selfPlayer => {
 			const collisions: number[] = [];
 
 			this.forEachPlayer(withPlayer => {
-				if (selfPlayer.rect.getIntersecting(withPlayer.rect) !== false) {
+				if (selfPlayer.next.getIntersecting(withPlayer.rect) !== false) {
 					collisions.push(withPlayer.getId());
 				}
 			}, [selfPlayer.getId()]);
-
 			return collisions;
 		};
+	}
+
+	public hasEntity(id: number) {
+		return !!this.players[id];
+	}
+
+	public getEntityById(id: number) {
+		return this.players[id];
 	}
 
 	/**
 	 * Returns only connected players
 	 */
 	public getPlayersList(ignore: number[] = []) {
-		return this.players.filter(value => !value.disconnected && !ignore.includes(value.getId()));
+		return Object.values(this.players).filter(value => !value.disconnected && !ignore.includes(value.getId()));
 	}
 
 	/**
@@ -112,8 +187,31 @@ export default class GameServer {
 		});
 	}
 
+	public broadcastPlayerMove(id: number, rect: RectInterface, collisions: number[]) {
+		this.broadcast("moveEntity", id, rect, collisions);
+	}
+
+	public broadcastEntityHealth(id: number, maxHealth: number, health: number) {
+		this.broadcast("entityHealth", id, maxHealth, health);
+	}
+
+	public broadcastEntityName(id: number, name: string) {
+		this.broadcast("entityName", id, name);
+	}
+
+	public broadcastEntityRotation(id: number, angle?: number) {
+		this.broadcast("entityRotate", id, angle);
+	}
+
 	public broadcastPlayersList() {
 		this.broadcast("playersList", this.getPlayersList().map(value => value.pack()));
+	}
+
+	public broadcastTarget(id: number, targetId?: number) {
+		this.broadcast("entityTarget", id, targetId);
+	}
+	public broadcastCollision(id: number, targetId?: number) {
+		this.broadcast("entityCollision", id, targetId);
 	}
 
 }

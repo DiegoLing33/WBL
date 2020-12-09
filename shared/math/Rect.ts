@@ -5,6 +5,7 @@ export default class Rect implements RectInterface {
 	public static zero = () => new Rect()
 	public static size = (width: number, height: number) => new Rect(0, 0, width, height);
 	public static position = (x: number, y: number) => new Rect(x, y, 0, 0);
+	public static angle = (angle: number) => new Rect(0, 0, 0, 0, angle);
 
 	/**
 	 * Returns the bounces
@@ -15,7 +16,8 @@ export default class Rect implements RectInterface {
 			x1: rect.x,
 			y1: rect.y,
 			x2: rect.x + rect.width,
-			y2: rect.y - rect.height
+			y2: rect.y - rect.height,
+			angle: rect.angle,
 		};
 	}
 
@@ -39,7 +41,8 @@ export default class Rect implements RectInterface {
 			x1: Math.max(r1.x[0], r2.x[0]), // _[0] is the lesser,
 			y1: Math.max(r1.y[0], r2.y[0]), // _[1] is the greater
 			x2: Math.min(r1.x[1], r2.x[1]),
-			y2: Math.min(r1.y[1], r2.y[1])
+			y2: Math.min(r1.y[1], r2.y[1]),
+			angle: 0,
 		};
 	};
 
@@ -47,24 +50,28 @@ export default class Rect implements RectInterface {
 	public width: number;
 	public x: number;
 	public y: number;
+	public angle: number;
 
 	constructor();
 	constructor(x?: RectInterface);
 	constructor(x?: number | RectInterface, y?: number, height?: number, width?: number);
-	constructor(x?: number | RectInterface, y?: number, height?: number, width?: number) {
+	constructor(x?: number | RectInterface, y?: number, height?: number, width?: number, angle?: number);
+	constructor(x?: number | RectInterface, y?: number, height?: number, width?: number, angle?: number) {
 		if (x === undefined) {
-			this.width = this.height = this.x = this.y = 0;
+			this.width = this.height = this.x = this.y = this.angle = 0;
 		}
 		if (typeof x === "object") {
 			this.x = x.x;
 			this.y = x.y;
 			this.width = x.width;
 			this.height = x.height;
+			this.angle = x.angle ?? 0;
 		} else {
 			this.x = x ?? 0;
 			this.y = y ?? 0;
 			this.width = width ?? 0;
 			this.height = height ?? 0;
+			this.angle = angle ?? 0;
 		}
 	}
 
@@ -78,6 +85,20 @@ export default class Rect implements RectInterface {
 	}
 
 	getRect(): Readonly<RectInterface> {
-		return {x: this.x, y: this.y, width: this.width, height: this.height};
+		return {x: this.x, y: this.y, width: this.width, height: this.height, angle: this.angle};
+	}
+
+	public setPosition(x?: number, y?: number) {
+		this.x = x ?? 0;
+		this.y = y ?? 0;
+	}
+
+	public setSize(width?: number, height?: number) {
+		this.width = width ?? 0;
+		this.height = height ?? 0;
+	}
+
+	public setAngle(angle: number) {
+		this.angle = angle;
 	}
 }

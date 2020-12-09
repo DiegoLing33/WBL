@@ -1,7 +1,7 @@
 .console {
   position: absolute;
   z-index: 1000;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.8);
   top: 0;
   right: 0;
   left: 0;
@@ -10,6 +10,7 @@
   height: 100%;
   display: none;
   flex-direction: column;
+  box-sizing: border-box;
 
   textarea{
     flex: 1;
@@ -20,6 +21,7 @@
     color: white;
     border: none;
     width: 100%;
+    box-sizing: border-box;
   }
 
   input{
@@ -30,5 +32,6 @@
     color: white;
     padding: 0 15px;
     width: 100%;
+    box-sizing: border-box;
   }
 }
