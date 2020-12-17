@@ -70,7 +70,8 @@
   "include": [
     "server/**/*.ts",
     "client/**/*.ts",
-    "shared/**/*.ts"
+    "shared/**/*.ts",
+    "tools/**/*.ts"
   ],
   "exclude": [
     "node_modules"

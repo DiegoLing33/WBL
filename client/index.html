@@ -16,33 +16,33 @@
 <div class="layer" id="app">
 	<div class="container-client">
 		<div class="player-panels">
-			<div class="player-panel">
+			<div class="player-panel" id="player-panel">
 				<div class="left-panel">
 					<div class="avatar"></div>
-					<div class="nickname">Player 1</div>
+					<div class="nickname" id="player-panel-name">Player 1</div>
 				</div>
 				<div class="right-panel">
 					<div class="point-panel">
 						<div class="point-line">
 							<div class="h-point-text">HP: </div>
 							<div class="h-point-back">
-								<div class="h-point-bar">
-									<div class="h-point-percent">50%</div>
+								<div class="h-point-bar" id="player-panel-hp">
+									<div class="h-point-percent" id="player-panel-hp-text">100%</div>
 								</div>
 							</div>
 						</div>
 						<div class="point-line">
 							<div class="e-point-text">EP: </div>
 							<div class="e-point-back">
-								<div class="e-point-bar">
-									<div class="e-point-percent">15%</div>
+								<div class="e-point-bar" id="player-panel-ep">
+									<div class="e-point-percent" id="player-panel-ep-text">100%</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div class="player-panel target">
+			<div class="player-panel target" style="display: none">
 				<div class="left-panel">
 					<div class="avatar"></div>
 					<div class="nickname">Player 2</div>

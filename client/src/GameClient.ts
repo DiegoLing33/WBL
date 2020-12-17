@@ -10,6 +10,7 @@ import Player from "./entity/Player";
 import ServerClient from "./server/ServerClient";
 import ConsoleClient from "./server/ConsoleClient";
 import SpritesLoader from "./loaders/SpritesLoader";
+import UI from "./UI/UI";
 
 export class GameClient {
 
@@ -27,6 +28,7 @@ export class GameClient {
 	public server!: ServerClient;
 	public entities: Record<number, Entity> = {};
 	public console!: ConsoleClient;
+	protected ui!: UI;
 
 	public loop: any = null;
 	public lastTimeUpdate: number = new Date().getTime();
@@ -65,7 +67,7 @@ export class GameClient {
 		this.loader = new SpritesLoader(textures);
 	}
 
-	checkKeyboard(){
+	checkKeyboard() {
 		if (!this.console.visible) {
 			if (this.keyboard.isPressed('w')) {
 				this.server.sendMove('up');
@@ -104,10 +106,11 @@ export class GameClient {
 
 	start() {
 		logClient("Client started");
-		this.socket = io("http://localhost:3022");
+		this.socket = io("http://server.ling.black:3311");
 		this.server = new ServerClient(this.socket);
 		this.console = new ConsoleClient(this.server);
 		this.renderer = new Renderer(this.$canvas, Rect.size(this.width, this.height), this);
+		this.ui = new UI();
 		this.started = true;
 
 		this.server.onMove = (selfId, selfRect, collisions) => {
@@ -124,11 +127,18 @@ export class GameClient {
 				const entity = this.entities[selfId];
 				entity.maxHealth = max;
 				entity.health = current;
+
+				if (selfId === this.id) {
+					this.ui.playerPanel.getHealthBar().setValues(entity.maxHealth, entity.health);
+				}
 			}
 		};
 
 		this.server.onEntityName = (selfId, name) => {
 			if (this.hasEntity(selfId)) {
+				if (selfId === this.id) {
+					this.ui.playerPanel.getPlayerNamePanel().setContent(this.player.name);
+				}
 				this.entities[selfId].name = name;
 			}
 		};
@@ -166,8 +176,6 @@ export class GameClient {
 
 	onKeyDown(e: KeyboardEvent) {
 		if (!this.isStarted()) return;
-
-
 	}
 
 	onKeyUp(e: KeyboardEvent) {
@@ -195,6 +203,12 @@ export class GameClient {
 				entity.spawn(player.rect);
 				if (player.id === this.id) {
 					this.player = entity;
+
+					this.ui.playerPanel.display(true);
+					this.ui.playerPanel.getPlayerNamePanel().setContent(this.player.name);
+					this.ui.playerPanel.getHealthBar().setValues(this.player.maxHealth, this.player.health);
+					this.ui.playerPanel.getEnergyBar().setValues(this.player.maxEnergy, this.player.energy);
+
 					this.console.log('Your id is', this.id);
 					this.console.log(JSON.stringify(player, null, 2));
 				}
