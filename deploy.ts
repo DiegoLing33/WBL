@@ -13,7 +13,7 @@ require("dotenv").config();
 	});
 
 	await deploy.nodeJSDeployExpressApp({
-		localPath: __dirname,
+		localPath:  "./dist",
 		remotePath: "/home/diego/game-server",
 		port: 3311
 	});
