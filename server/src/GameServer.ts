@@ -7,6 +7,7 @@ import {getRandomInt} from "../../shared/math/Math";
 import Rect from "../../shared/math/Rect";
 import {RectInterface} from "../../shared/interfaces/RectInterface";
 import vm from "vm";
+import {Logger} from "@ling.black/log";
 
 
 export default class GameServer {
@@ -20,6 +21,7 @@ export default class GameServer {
 	protected http: HTTPServer;
 	protected io: socketIO.Server;
 
+	protected database: Record<string, ServerPlayer> = {};
 
 	constructor(port: number, host: string) {
 		this.port = port;
@@ -46,7 +48,19 @@ export default class GameServer {
 			logServer(`Server started ${this.host}:${this.port}`);
 
 			this.io.on("connection", (socket: socketIO.Socket) => {
-				this.createPlayer(socket);
+				Logger.log('New connection ++');
+				socket.onAny((e, login) => {
+					if (e === "login") {
+						if (!this.database.hasOwnProperty(login)) {
+							this.database[login] = this.createPlayer(socket);
+						}
+						const player = this.database[login];
+						player.setName(login);
+						player.setUpSocket(socket);
+						player.sendReady();
+						this.broadcastPlayersList();
+					}
+				});
 			});
 		});
 	}
@@ -57,9 +71,8 @@ export default class GameServer {
 			Rect.position(getRandomInt(10, 800), getRandomInt(10, 800)));
 
 		this.players[playerId] = player;
-		this.broadcastPlayersList();
 
-		player.getSocket().on("command", (message: string) => {
+		player.onCommand = ((message: string) => {
 			const players = this.players;
 			message = message.replace(/@([0-9]+)/g, "id($1)");
 
@@ -83,8 +96,8 @@ export default class GameServer {
 			})();
 		});
 
-		player.onDisconnected = () => () => {
-			this.broadcastPlayersList();
+		player.onDisconnected = () => {
+			this.broadcast("entityDisconnect", player.getId());
 		};
 
 		player.onCollision = (self, target) => {
@@ -143,6 +156,8 @@ export default class GameServer {
 			}, [selfPlayer.getId()]);
 			return collisions;
 		};
+
+		return player;
 	}
 
 	public hasEntity(id: number) {
@@ -183,7 +198,7 @@ export default class GameServer {
 	 */
 	public broadcast(event: string, ...args: any[]) {
 		this.forEachPlayer(player => {
-			player.getSocket().emit(event, ...args);
+			player.send(event, ...args);
 		});
 	}
 
@@ -210,6 +225,7 @@ export default class GameServer {
 	public broadcastTarget(id: number, targetId?: number) {
 		this.broadcast("entityTarget", id, targetId);
 	}
+
 	public broadcastCollision(id: number, targetId?: number) {
 		this.broadcast("entityCollision", id, targetId);
 	}

@@ -25,6 +25,8 @@ export default class SpritesLoader {
 	public loadedSprites: Record<string, Sprite> = {};
 	public sprites: string[] = [];
 
+	public static default: SpritesLoader;
+
 	constructor(sprites: string[]) {
 		this.sprites = sprites;
 	}

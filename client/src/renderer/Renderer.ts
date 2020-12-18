@@ -95,7 +95,7 @@ export default class Renderer {
 		this.$context.globalAlpha = 0.8;
 		this.drawText(
 			entity.name,
-			Rect.position(entity.rect.width / 2, 50),
+			Rect.position(entity.rect.width / 2, 80),
 			{color: "#ffffff"}
 		);
 		this.$context.restore();
@@ -129,6 +129,9 @@ export default class Renderer {
 
 	public renderEntities(lastTimeUpdate: number) {
 		Object.values(this.client.entities).forEach(entity => {
+			const animation = entity.getCurrentAnimation();
+			const sprite = entity.sprite;
+
 			this.$context.save();
 			this.$context.translate(entity.rect.x, entity.rect.y);
 			this.$context.textAlign = 'center';
@@ -136,21 +139,29 @@ export default class Renderer {
 
 			if (entity.sprite) {
 				this.$context.save();
-				this.$context.translate( 20, 20);
+				this.$context.translate(40, 40);
 				const rad = (entity.rect.angle / 180) * Math.PI
 				this.$context.rotate(rad);
-				this.$context.translate( -20, -20);
+				this.$context.translate(-40, -40);
 
 				if (this.displayBoundingRects) {
 					this.drawRect(new Rect(0, 0, entity.rect.height, entity.rect.width));
 				}
 
-				if (entity.id === this.client.player.target) {
-					this.drawImage(entity.sprite.targetImage,
-						entity.sprite.rect, new Rect(0, 0, entity.rect.height, entity.rect.width));
-				} else {
-					this.drawImage(entity.sprite.image,
-						entity.sprite.rect, new Rect(0, 0, entity.rect.height, entity.rect.width));
+
+				if (animation && sprite) {
+					const dx = animation.currentFrame.x;
+					const dy = animation.currentFrame.y;
+
+					if (entity.id === this.client.player.target) {
+						this.drawImage(entity.sprite.targetImage,
+							new Rect(dx, dy, animation.size.height, animation.size.width),
+							new Rect(0, 0, entity.rect.height, entity.rect.width));
+					} else {
+						this.drawImage(entity.sprite.image,
+							new Rect(dx, dy, animation.size.height, animation.size.width),
+							new Rect(0, 0, entity.rect.height, entity.rect.width));
+					}
 				}
 
 				if (entity.isHurting) {

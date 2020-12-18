@@ -6,7 +6,8 @@
   "scripts": {
     "start:server": "ts-node server/index.ts",
     "build:client": "webpack && sass ./client/css",
-    "watch:client": "webpack --watch"
+    "watch:client": "webpack --watch",
+    "server:deploy": "tsc && ts-node ./deploy.ts"
   },
   "dependencies": {
     "@ling.black/deploy": "^1.1.1",

@@ -11,6 +11,7 @@ import ServerClient from "./server/ServerClient";
 import ConsoleClient from "./server/ConsoleClient";
 import SpritesLoader from "./loaders/SpritesLoader";
 import UI from "./UI/UI";
+import Updater from "./updater/Updater";
 
 export class GameClient {
 
@@ -35,11 +36,13 @@ export class GameClient {
 	public player!: Player;
 	public target?: Entity;
 
-	public loader: SpritesLoader;
 
 	// Controllers
 	public mouse: MouseController;
 	public keyboard: KeyboardController;
+
+	// Modules
+	public updater = new Updater(this);
 
 	constructor(appId: string, canvasId: string, textures: string[]) {
 		this.height = window.innerHeight;
@@ -64,7 +67,7 @@ export class GameClient {
 		this.keyboard.onKeyDown = this.onKeyDown.bind(this);
 		this.keyboard.onKeyUp = this.onKeyUp.bind(this);
 
-		this.loader = new SpritesLoader(textures);
+		SpritesLoader.default = new SpritesLoader(textures);
 	}
 
 	checkKeyboard() {
@@ -86,9 +89,11 @@ export class GameClient {
 
 	startGameLoop() {
 		this.loop = setInterval(() => {
+			this.updater.update(this.lastTimeUpdate);
 			this.renderer.render(this.lastTimeUpdate);
 			this.checkKeyboard();
 			this.lastTimeUpdate = new Date().getTime();
+
 		}, 1000 / 30);
 	}
 
@@ -104,21 +109,27 @@ export class GameClient {
 		return this.entities[id];
 	}
 
-	start() {
+	start(login: string, server: string, port: number) {
 		logClient("Client started");
-		this.socket = io("http://server.ling.black:3311");
+		this.socket = io("http://" + server + ":" + port);
 		this.server = new ServerClient(this.socket);
 		this.console = new ConsoleClient(this.server);
 		this.renderer = new Renderer(this.$canvas, Rect.size(this.width, this.height), this);
 		this.ui = new UI();
-		this.started = true;
+		this.started = false;
 
+		let moveTimeout = setTimeout(() => null, 300);
 		this.server.onMove = (selfId, selfRect, collisions) => {
 			if (this.hasEntity(selfId)) {
 				const entity = this.entities[selfId];
 				entity.rect.x = selfRect.x;
 				entity.rect.y = selfRect.y;
 				entity.collisions = collisions;
+				entity.move();
+				if (moveTimeout) clearTimeout(moveTimeout);
+				moveTimeout = setTimeout(() => {
+					entity.idle();
+				}, 300);
 			}
 		};
 
@@ -146,18 +157,44 @@ export class GameClient {
 		this.server.onEntityTarget = (selfId, targetId) => {
 			if (this.hasEntity(selfId)) this.getEntityById(selfId).target = targetId;
 		};
+
 		this.server.onEntityRotate = (self, angle) => {
 			if (this.hasEntity(self)) this.getEntityById(self).rect.angle = angle;
 		};
+		this.server.onDisconnect = id => {
+			console.log('Disconnected: ' + id);
+			if (this.hasEntity(id)) {
+				this.getEntityById(id).despawn(() => {
+					delete this.entities[id];
+				});
+			}
+		};
 
-		this.server.start();
+		this.socket.on("ready", (id: number, pack: EntityInterface) => {
+			this.player = new Entity(id);
+			this.entities[id] = this.player;
+			this.player.name = pack.name;
+			this.player.energy = pack.energy;
+			this.player.health = pack.health;
+			this.player.maxHealth = pack.maxHealth;
+			this.player.maxEnergy = pack.maxEnergy;
+			this.player.collisions = pack.collisions;
+			this.player.spawn(pack.rect);
 
-		this.socket.on("ready", (id: number) => {
+			this.ui.playerPanel.display(false);
+			this.ui.playerPanel.getPlayerNamePanel().setContent(this.player.name);
+			this.ui.playerPanel.getHealthBar().setValues(this.player.maxHealth, this.player.health);
+			this.ui.playerPanel.getEnergyBar().setValues(this.player.maxEnergy, this.player.energy);
+
+			logClient(JSON.stringify(pack, null, 2));
 			this.onConnected(id);
 		})
+
 		this.socket.on("playersList", (players: EntityInterface[]) => {
 			this.onPlayers(players);
 		});
+
+		this.server.sendLogin(login);
 	}
 
 	isStarted() {
@@ -166,7 +203,10 @@ export class GameClient {
 
 	onConnected(id: number) {
 		this.id = id;
+		this.started = true;
+
 		logClient("Got id:", id);
+		this.server.start();
 		this.startGameLoop();
 	}
 
@@ -192,7 +232,6 @@ export class GameClient {
 				const entity = new Entity(player.id);
 				this.entities[player.id] = entity;
 
-				entity.sprite = this.loader.loadedSprites['dragon'];
 				entity.name = player.name;
 				entity.energy = player.energy;
 				entity.health = player.health;
@@ -201,17 +240,6 @@ export class GameClient {
 				entity.collisions = player.collisions;
 				entity.rect.angle = 90;
 				entity.spawn(player.rect);
-				if (player.id === this.id) {
-					this.player = entity;
-
-					this.ui.playerPanel.display(true);
-					this.ui.playerPanel.getPlayerNamePanel().setContent(this.player.name);
-					this.ui.playerPanel.getHealthBar().setValues(this.player.maxHealth, this.player.health);
-					this.ui.playerPanel.getEnergyBar().setValues(this.player.maxEnergy, this.player.energy);
-
-					this.console.log('Your id is', this.id);
-					this.console.log(JSON.stringify(player, null, 2));
-				}
 			}
 		});
 	}

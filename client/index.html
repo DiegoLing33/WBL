@@ -69,27 +69,15 @@
 				</div>
 			</div>
 		</div>
-		<div class="modal_panel">
+		<div class="modal_panel" id="modal-login" style="display: none">
 			<div class="modal-node">
 				<div class="label">Nickname</div>
-				<input type="text" class="text-box"/>
+				<input id="modal-login-name" type="text" class="text-box"/>
 			</div>
-			<div class="modal-node">
-				<div class="label">Next Node</div>
-				<input type="text" class="text-box"/>
-			</div>
-			<div class="modal-node">
-				<div class="label">Next Node</div>
-				<input type="text" class="text-box"/>
-			</div>
-			<button class="modal-button">Start</button>
+			<button id="modal-login-button" class="modal-button">Start</button>
 		</div>
 		<div class="footer">
-			<div class="action-panel">
-				<div class="action-player"></div>
-				<div class="action-player"></div>
-				<div class="action-player"></div>
-				<div class="action-player"></div>
+			<div class="action-panel" id="action-bar">
 				<div class="action-player"></div>
 				<div class="action-player"></div>
 				<div class="action-player"></div>
@@ -100,6 +88,6 @@
 </div>
 <canvas class="layer" id="mainCanvas"></canvas>
 <div class="layer" id="backdoor"></div>
-<script src="../dist/bundle.js"></script>
+<script src="./bundle.js"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@ import {DirectionString} from "../../shared/types/Direction";
 
 export default class ServerPlayer {
 	protected readonly id: number;
-	protected readonly socket: socketIO.Socket;
+	protected socket: socketIO.Socket;
 	public disconnected: boolean = false;
 
 	// Entity
@@ -28,7 +28,8 @@ export default class ServerPlayer {
 	public next: Rect = Rect.position(0, 0);
 
 	// Events
-	public onDisconnected?: (player: ServerPlayer) => void;
+	public onDisconnected!: (player: ServerPlayer) => void;
+	public onCommand!: (message: string) => void;
 	public onMove?: (player: ServerPlayer) => void;
 	public onHealth?: (player: ServerPlayer) => void;
 	public onName?: (player: ServerPlayer) => void;
@@ -51,8 +52,8 @@ export default class ServerPlayer {
 	constructor(id: number, socket: socketIO.Socket, rect: RectInterface) {
 		this.id = id;
 		this.socket = socket;
-		this.rect = new Rect(rect.x, rect.y, 40, 40, 0);
-		this.next = new Rect(rect.x, rect.y, 40, 40, 0);
+		this.rect = new Rect(rect.x, rect.y, 80, 80, 0);
+		this.next = new Rect(rect.x, rect.y, 80, 80, 0);
 
 		this.health = 100;
 		this.energy = 80;
@@ -62,11 +63,17 @@ export default class ServerPlayer {
 
 		this.name = 'Player' + this.id;
 		logPlayer(this.getId(), "Ready to go");
-		this.sendReady();
+	}
+
+	public setUpSocket(socket: socketIO.Socket) {
+		this.socket = socket;
+		this.disconnected = false;
 
 		socket.on("disconnect", () => {
 			this.disconnect();
 		});
+
+		socket.on("command", (message: string) => this.onCommand(message));
 
 		let rPath = 0;
 		let rInterval: any = null;
@@ -215,6 +222,6 @@ export default class ServerPlayer {
 	}
 
 	public sendReady() {
-		this.send("ready", this.getId());
+		this.send("ready", this.getId(), this.pack());
 	}
 }
